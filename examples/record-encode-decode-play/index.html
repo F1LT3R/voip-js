@@ -24,7 +24,9 @@
     <button id="recordButton">Record</button>
 
     <h2>Notes</h2>
-    <p>The web page captures your microphone sound using GetUserMedia and records to a PCM buffer using <a href="https://github.com/mattdiamond/Recorderjs">Record.js</a>. Then the <a href="https://github.com/kazuki/opus.js-sample">Opus VOIP Codec for JavaScript</a> begins encoding, and decoding the stream. The decoder fills an audio-queue (a Float32Array buffer), and that buffer fed directly to a JavaScript Audio Node in the Web Audio Context. The Web Audio context then plays the audio out over your speakers. You should hear the encoding artifacts. :) </p>
+    <p>The web page captures your microphone sound using GetUserMedia and records to a PCM buffer using <a href="https://github.com/mattdiamond/Recorderjs">Record.js</a>. Then the <a href="https://github.com/kazuki/opus.js-sample">Opus VOIP Codec for JavaScript</a> begins encoding, and decoding the stream. The decoder fills an audio-queue (a Float32Array buffer), and that buffer is fed directly to a JavaScript Audio Node attached to the Web Audio Context. The Web Audio context then plays the audio out through your OS to your speakers. You should hear the encoding artifacts. :) </p>
+
+    <p><i>(Only tested in Chrome)</i></p>
 
 <!-- EXAMPLE CODE -->
     <script src="record-encode-decode-play.js"></script>

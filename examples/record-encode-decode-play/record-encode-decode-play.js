@@ -7,9 +7,27 @@
     , userMediaInput
     , recorder
     , file_io_buffer_size = 65536 * 2
-    , sampler = new SpeexResampler(2, 48000*2, 48000, 16, false)
-    , encoder = new OpusEncoder(48000, 2, 2048, 20) //Quality: 2048=voip, 2049=audio (aka "app" setting)
-    , decoder = new OpusDecoder(48000, 2)    
+    
+    //  Opus Quality Settings
+    //  =====================
+    //  App: 2048=voip, 2049=audio, 2051=low-delay
+    //  Rate: 8000, 12000, 16000, 24000, or 48000
+    //  Frame Duraction: 2.5, 5, 10, 20, 40, 60
+    
+    // Lowest Quality Settings: (Stutters at the start of the playback)
+    // , sampler = new SpeexResampler(1, 8000*2, 8000, 16, false)
+    // , encoder = new OpusEncoder(8000, 1, 2048, 2.5) 
+    // , decoder = new OpusDecoder(8000, 1)
+
+    // Highest Quality Settings:
+    // , sampler = new SpeexResampler(2, 48000*2, 48000, 16, false)
+    // , encoder = new OpusEncoder(48000, 2, 2049, 60) 
+    // , decoder = new OpusDecoder(48000, 2)
+    
+    // Medium Quality Settings:
+    , sampler = new SpeexResampler(1, 24000*2, 24000, 16, false)
+    , encoder = new OpusEncoder(24000, 1, 2048, 20) 
+    , decoder = new OpusDecoder(24000, 1)    
     ;
 
 

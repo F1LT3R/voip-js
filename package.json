@@ -1,6 +1,6 @@
 {
   "name": "voip-js",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "VOIP-JS is an on-going experiment that aims to demonstrate how to roll your own peer-to-peer VOIP application using only JavaScript.",
   "main": "index.js",
   "author": "Alistair MacDonald <al@pwn.io>",
