@@ -1,0 +1,24 @@
+{
+  "name": "voip-js",
+  "version": "0.0.1",
+  "description": "VOIP-JS is an on-going experiment that aims to demonstrate how to roll your own peer-to-peer VOIP application using only JavaScript.",
+  "main": "index.js",
+  "author": "Alistair MacDonald <al@pwn.io>",
+  "contributors": [
+    {
+      "name": "Anthony Nardi",
+      "url": "https://github.com/anthony-nardi"
+    }
+  ],
+  "email": "al@pwn.io",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "http://github.com/f1lt3r/voip-js.git"
+  },
+  "dependencies": {
+    "connect": "^3.3.3",
+    "serve-static": "^1.7.1",
+    "socket.io": "^1.2.1"
+  }
+}
