@@ -1,0 +1,36 @@
+body{
+  font-family:"Courier New", Courier, monospace;
+}
+button{
+  text-decoration: none;
+  margin:0;
+  font-family: 'Open Sans', sans-serif;
+  font-size:16px;
+  padding:8px 16px;
+  margin-top:16px;
+  background: linear-gradient(#af687d, #7f384d);
+  color:#FFF;
+  border:none;
+  border-radius:8px;
+  border-width: 1px;
+  margin-bottom:8px;
+  box-shadow: 1px 2px 2px rgba(0,0,0,.15);
+}
+button:hover, button:focus{
+  background: linear-gradient(#7f384d, #4f081d);
+  cursor:pointer;
+}
+button:active{
+  background: linear-gradient(#CCC, #AAA);
+}
+
+button.recording{
+  background: linear-gradient(#af7d68, #7f4d38);
+}
+button.recording:hover, button.recording:focus{
+  background: linear-gradient(#387f4d, #084f1d);
+  cursor:pointer;
+}
+button.recording:active{
+  background: linear-gradient(#CCC, #AAA);
+}

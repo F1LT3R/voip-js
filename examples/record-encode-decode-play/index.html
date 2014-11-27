@@ -4,16 +4,27 @@
     <script src="lib/opus.js"></script>
     <script src="lib/libopus_libspeexdsp.js"></script>
     <script src="lib/riff_pcm_wave_reader.js"></script>
-    <script src="lib/player.js"></script>
     <script src="lib/resampler.js"></script>
-    <script src="lib/player.js"></script>
 
 <!-- OTHER SCRIPTS -->
     <script src="/socket.io/socket.io.js"></script>
 
 <!-- UI -->
-    <button id="startRec">Start</button>
-    <button id="stopRec">Stop</button>
+    
+    <link rel="stylesheet" href="lib/style.css" />
+
+    <h1>Rec > En+Decode > Play</h1>
+    <title>Rec > En+Decode > Play</title>
+    <ol>
+      <li>Press <b><i>[Allow]</i></b> to let the webpage to capture your microphone sound.</li>
+      <li>Press <b><i>[Record]</i></b> to begin capturing audio</li>
+      <li>Press <b><i>[Playback]</i></b> to encode, decode and playback audio over your speakers.</li>
+    </ol>
+    
+    <button id="recordButton">Record</button>
+
+    <h2>Notes</h2>
+    <p>The web page captures your microphone sound using GetUserMedia and records to a PCM buffer using <a href="https://github.com/mattdiamond/Recorderjs">Record.js</a>. Then the <a href="https://github.com/kazuki/opus.js-sample">Opus VOIP Codec for JavaScript</a> begins encoding, and decoding the stream. The decoder fills an audio-queue (a Float32Array buffer), and that buffer fed directly to a JavaScript Audio Node in the Web Audio Context. The Web Audio context then plays the audio out over your speakers. You should hear the encoding artifacts. :) </p>
 
 <!-- EXAMPLE CODE -->
     <script src="record-encode-decode-play.js"></script>

@@ -1,146 +1,167 @@
 
-function error(){
-    console.log('Err: ', arguments);
-  }
-
-
-var socket = io('http://localhost');
-
-  var audioContext = new AudioContext
+  //// FIRST, SOME GLOBAL THINGS...
+  //////////////////////////////////////////////////////////////////////////  
+  
+  var socket = io('http://localhost')
+    , audioContext = new AudioContext
+    , userMediaInput
     , recorder
-    , input
+    , file_io_buffer_size = 65536 * 2
+    , sampler = new SpeexResampler(2, 48000*2, 48000, 16, false)
+    , encoder = new OpusEncoder(48000, 2, 2048, 20) //Quality: 2048=voip, 2049=audio (aka "app" setting)
+    , decoder = new OpusDecoder(48000, 2)    
     ;
+
+
+
+  //// HTML RECORD BUTTON BINDING
+  //////////////////////////////////////////////////////////////////////////  
+
+  var recording = false;
+  
+  recordButton.onclick = function(){
+    console.log('Started recording...');
+    if(!recording){
+      recording=true;
+      recordButton.className ='recording';
+      recorder = new Recorder(userMediaInput);
+      recordButton.innerHTML='Playback';
+      recorder.record();
+    }else{
+      console.log('Stopped recording.');
+      recording = false;
+      recordButton.className ='';
+      recordButton.innerHTML='Record';
+      userMediaInput.disconnect();
+      recorder.stop();
+      initWavReader();
+      recorder.exportWAV(function(blob) {
+        wavReader.open(blob);
+      });
+    }
+  };
+  
+
+  
+  //// GET USER MEDIA (MICROPHONE INPUT)
+  //////////////////////////////////////////////////////////////////////////  
 
   function startUserMedia(stream){
     var gainNode = audioContext.createGain();
     gainNode.gain.value = 0;
-    input = audioContext.createMediaStreamSource(stream);
-    input.connect(gainNode);
+    userMediaInput = audioContext.createMediaStreamSource(stream);
+    userMediaInput.connect(gainNode);
     gainNode.connect(audioContext.destination)
-    recorder = new Recorder(input);
   }
 
-  navigator.webkitGetUserMedia({audio: true}, startUserMedia, error);
+  function userMediaErr(){
+    console.log('User Media Error: ', arguments);
+  }
 
-  var wavReader = new RiffPcmWaveReader();
+  navigator.webkitGetUserMedia({audio: true}, startUserMedia, userMediaErr);
 
-  wavReader.onopened = function(){
-    console.log( wavReader.getSamplingRate() + 'Hz');
-    console.log( wavReader.getBitsPerSample() + 'bits');
-    console.log( wavReader.getChannels() + 'ch');
-    console.log( Math.floor(wavReader.getDataChunkBytes() /
-      (wavReader.getSamplingRate() * wavReader.getChannels() * (wavReader.getBitsPerSample()/8)
-      )) + ' sec'
-    );
 
+
+  //// WAVE READER
+  //////////////////////////////////////////////////////////////////////////
+
+  var wavReader = null;
+
+  function initWavReader(){
+    wavReader = new RiffPcmWaveReader();
+    wavReader.onopened = wavReaderOpened;
+    wavReader.onloadend = wavReaderLoadend;
+    wavReader.onerror = wavReaderError;
+  }
+
+  function wavReaderOpened(){
+    var rate = wavReader.getSamplingRate()
+      , bitsPerSample = wavReader.getBitsPerSample()
+      , channels = wavReader.getChannels()
+      , chunkBytes = wavReader.getDataChunkBytes()
+      , seconds = (chunkBytes / (rate * channels * (bitsPerSample/8))).toFixed(2)
+      ;
+    console.log(seconds + ' seconds of audio recorded.');
     wavReader.seek(0);
     wavReader.read(file_io_buffer_size);
   }
 
-
-
-  var ran = 0;
-
-  wavReader.onloadend = function(ev){
+  function wavReaderLoadend(ev){
     console.log('WaveReader read '+ ev.target.result.byteLength+' bytes.');
-    // console.log(ev);
-    // console.log(ev.target.result.byteLength);
-    doEncode(ev.target.result);
-
-    if(!ran){
-      ran=1;
-      // source.start(0);
-    }
-
-    // wavReader.seek(0);
-    // Finish when the bytes have been exhausted
-    if(ev.target.result.byteLength>0){
+    doEncodeDecode(ev.target.result);
+    // Read while there's still bytes!
+    if(ev.target.result.byteLength>0)
       wavReader.read(file_io_buffer_size);
-      // doEncode();
-    }else{
-      // thePlayer.stop();
-    }
   }
-  wavReader.onerror = function(reason){
+  
+  function wavReaderError(reason){
     console.log('wavReader error: ', reason);
   }
+  
+
+
+  //// OPUS ENCODE/DECODE > TO AUDIO QUEUE
+  //////////////////////////////////////////////////////////////////////////
+
+  function doEncodeDecode(data){
+    var resampled_pcm = sampler.process_interleaved(data)
+      , opus_packets = encoder.encode_float(resampled_pcm)
+      , i = 0
+      , l = opus_packets.length
+      , decoded_buffer
+      ;
+
+    for (; i < l; i++) {
+      audioQueue.write(decoder.decode_float(opus_packets[i]));
+    }
+  }
 
 
 
+  //// AUDIO QUEUE
+  //////////////////////////////////////////////////////////////////////////
 
+  var audioQueue = {
+    buffer: new Float32Array(0),
 
-  startRec.onclick = function(){
-    console.log('Started recording...');
-    recorder.record();
+    write: function(newAudio){
+      var currentQLength = this.buffer.length
+        , newBuffer = new Float32Array(currentQLength+newAudio.length)
+        ;
+
+      newBuffer.set(this.buffer, 0);
+      newBuffer.set(newAudio, currentQLength);
+      this.buffer = newBuffer;
+      // console.log('Queued '+newBuffer.length+' samples.');
+    },
+
+    read: function(nSamples){
+      var samplesToPlay = this.buffer.subarray(0, nSamples);
+      this.buffer = this.buffer.subarray(nSamples, this.buffer.length);
+      console.log('Queue at '+this.buffer.length+' samples.');
+      return samplesToPlay;
+    },
+
+    length: function(){
+      return this.buffer.length;
+    }
   };
 
-  stopRec.onclick = function(){
-    console.log('Stopped recording.');
-    input.disconnect();
-    recorder.stop();
-    recorder.exportWAV(function(blob) {
-      wavReader.open(blob);
-    });
-  };
 
 
-var file_io_buffer_size = 65536 * 2;
+  //// JAVASCRIPT AUDIO NOTE (FOR OUTPUT SOUND)
+  //////////////////////////////////////////////////////////////////////////
 
-sampler = new SpeexResampler(2, 48000*2, 48000, 16, false);
-encoder = new OpusEncoder(48000, 2, 2048, 20); //2048=voip, 2049=audio (app)
-decoder = new OpusDecoder(48000, 2);
-
-
-
-function doEncode(data){
-  var resampled_pcm = sampler.process_interleaved(data)
-    , opus_packets = encoder.encode_float(resampled_pcm)
-    , i = 0
-    , l = opus_packets.length
-    , decoded_buffer
+  var scriptNode = audioContext.createScriptProcessor(1024, 1, 1)
+    , silence = new Float32Array(1024)
     ;
 
-  for (; i < l; i++) {
-    audioQueue.write(decoder.decode_float(opus_packets[i]));
+  scriptNode.onaudioprocess = function(e) {
+    if (audioQueue.length())
+        e.outputBuffer.getChannelData(0).set(audioQueue.read(1024));
+    else
+      e.outputBuffer.getChannelData(0).set(silence);
   }
-}
 
-
-
-
-var audioQueue = {
-  buffer: new Float32Array(0),
-  write: function(newAudio){
-    var currentQLength = this.buffer.length
-      , newBuffer = new Float32Array(currentQLength+newAudio.length)
-      ;
-    newBuffer.set(this.buffer, 0);
-    newBuffer.set(newAudio, currentQLength);
-    this.buffer = newBuffer;
-    // console.log('Queued '+newBuffer.length+' samples.');
-  },
-  read: function(nSamples){
-    var samplesToPlay = this.buffer.subarray(0, nSamples);
-    this.buffer = this.buffer.subarray(nSamples, this.buffer.length);
-    console.log('Queue at '+this.buffer.length+' samples.');
-    return samplesToPlay;
-  },
-  length: function(){
-    return this.buffer.length;
-  }
-};
-
-
-
-var scriptNode = audioContext.createScriptProcessor(1024, 1, 1);
-scriptNode.connect(audioContext.destination);
-
-
-
-scriptNode.onaudioprocess = function(e) {
-  if (audioQueue.length())
-      e.outputBuffer.getChannelData(0).set(audioQueue.read(1024));
-  else
-    e.outputBuffer.getChannelData(0).set([]);
-}
+  scriptNode.connect(audioContext.destination);
 
